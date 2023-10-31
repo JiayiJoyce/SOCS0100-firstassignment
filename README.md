@@ -12,12 +12,15 @@
 >3. Produces three data visualisation using ggplot2 
 
 ## How to use
-Do we need to include the ==database== in the zip file that we hand in as well?
+<span style="color: rgba(255, 125, 170, 0.8);">Do we need to include the == database == in the zip file that we hand in as well?</span> 
 
 ## How users can get started with the project
-Do I need to inclue the packages that needs to be installed, or do I only need to include it in the code base?
+<span style="color: rgba(255, 125, 170, 0.8);">Do I need to include the ==packages== that needs to be installed, or do I only need to include it in the code base? </span> 
+
 ## Where users can get help with your project
 
 ## Who maintains and contributes to the project
-How to make acknowledgment? Do we need to do it in the read me file- like acknowledging the data base?
-Many instructions on how to write Read me file talked about including licence- is that something that we need to do?
+<span style="color: rgba(255, 125, 170, 0.8);"> How to make acknowledgment ? Do we need to do it in the read me file- like acknowledging the data base?
+Many instructions on how to write Read me file talked about including ==licence== is that something that we need to do?</span> 
+
+- is there any examplar database?
