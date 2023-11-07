@@ -1,20 +1,30 @@
-setwd("/Users/chenjiayi/Desktop/Computational/First-Summative-Assignment") #setting working directory to the file
+# setting the environment-----
+# remove later setwd("/Users/chenjiayi/Desktop/Computational/DVHZ3-SOCS0100-Assignment") 
 rm(list = ls())#clearing all object from workspace to create a clean environment
 
-if (!require("pacman")) {
-  install.packages("pacman")
+# Code for setup : installing packages, remove the # in front of them to run-----
+if (!require("groundhog")) {
+  install.packages("groundhog")
 }
-pacman::p_load(
-  tidyverse, 
-  kableExtra,
-  flextable, 
-  skimr,
-  glue
-  )
-### Above are all prerequisite packages for the project. For improvement: integrate groundhog.###
+pkgs <- c("tidyverse", 
+          "kableExtra",
+          "flextable", 
+          "skimr",
+          "ggplot2",
+          "glue", 
+          "janitor")
+groundhog.library(pkgs, "2023-11-04")
+
+# Part I-A Data Exploration and contextualisation ---------------------------------
+str(energy_and_fuel)
+# End of Part I-A ----------------
+
+
+### Above are all prerequisite packages for the project. For improvement: integrate groundhog.------
 
 energy_and_fuel <- read_csv("Number of people with and without energy access (OWID based on World Bank, 2021).csv")
-# need to know how to describe structure and contextual relevance. the variable is already known
+janitor::clean_names(energy_and_fuel)
+
 
 ###Below are everything related to data wrangling.
 #first, created new variables

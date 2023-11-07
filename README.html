@@ -354,6 +354,8 @@ display: none;
 
 <div id="first-summative-assignment" class="section level1">
 <h1>First-Summative-Assignment</h1>
+<div id="what-this-project-does" class="section level2">
+<h2>What this project does</h2>
 <blockquote>
 <p>First summative assignment for the SOCS0100 module.</p>
 <p>R script which processes and visualise data from the <a href="https://github.com/owid/owid-datasets/blob/master/datasets/Number%20of%20people%20with%20and%20without%20energy%20access%20(OWID%20based%20on%20World%20Bank%2C%202021)/Number%20of%20people%20with%20and%20without%20energy%20access%20(OWID%20based%20on%20World%20Bank%2C%202021).csv">share
@@ -367,19 +369,24 @@ dataset</p></li>
 <li><p>Produces reproducible data visualisation based on the refined
 dataset</p></li>
 </ol>
-<div id="how-to-use" class="section level2">
-<h2>How to use</h2>
 </div>
 <div id="how-users-can-get-started-with-the-project" class="section level2">
 <h2>How users can get started with the project</h2>
 <blockquote>
-<p>[!IMPORTANT] &gt; You need to download the <a href="https://github.com/owid/owid-datasets/blob/master/datasets/Number%20of%20people%20with%20and%20without%20energy%20access%20(OWID%20based%20on%20World%20Bank%2C%202021)/Number%20of%20people%20with%20and%20without%20energy%20access%20(OWID%20based%20on%20World%20Bank%2C%202021).csv">share
+<p>You need to download the <a href="https://github.com/owid/owid-datasets/blob/master/datasets/Number%20of%20people%20with%20and%20without%20energy%20access%20(OWID%20based%20on%20World%20Bank%2C%202021)/Number%20of%20people%20with%20and%20without%20energy%20access%20(OWID%20based%20on%20World%20Bank%2C%202021).csv">share
 of the population with access to electricity and clean fuels for
 cooking</a> dataset and importing it into your directory in order to run
 the r-script</p>
 </blockquote>
-<p>To install it, simply download the dataset in the link, then drag it
-into your <code>./obsidian/themes</code> folder</p>
+<p>To install it, simply</p>
+<ol style="list-style-type: decimal">
+<li>Download the dataset from the link, then drag it into the
+<code>DVHZ3-SOCS0100-Assignment</code> folder</li>
+<li>run the
+<code>energy_and_fuel &lt;- read_csv(&quot;Number of people with and without energy access (OWID based on World Bank, 2021).csv&quot;)</code>
+line in order to import the csv file into the dataset under the
+shorthand name <code>energy_and_fuel</code></li>
+</ol>
 </div>
 <div id="where-users-can-get-help-with-your-project" class="section level2">
 <h2>Where users can get help with your project</h2>

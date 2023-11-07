@@ -10,8 +10,6 @@ editor: visual
 
 I choose to analyse the [share of the population with access to electricity and clean fuels for cooking](https://github.com/owid/owid-datasets/blob/master/datasets/Number%20of%20people%20with%20and%20without%20energy%20access%20(OWID%20based%20on%20World%20Bank%2C%202021)/Number%20of%20people%20with%20and%20without%20energy%20access%20(OWID%20based%20on%20World%20Bank%2C%202021).csv) dataset (World Bank, 2021).
 
-First, I ran the
-
 ### Overview of the dataset
 
 ## Part I-B Data Processing and Functional Programming
@@ -21,6 +19,61 @@ First, I ran the
 ## Part II-B Reproducibility
 
 ## Part II-C Critical engagement with AI: ChatGPT
+
+I collaborated with ChatGPT to check, edit and refine my code through out the project. These instances are listed below.
+
+### Increasing reproducibility for packages
+
+I used `pacman` to streamline the installation of multiple packages. However, to ensure reproducibility I want to load packages as available on the date I completed this project. I first prompted ChatGPT for ways to integrate `groundhog.library()` into `pacman`, for which it produced the following code:
+
+```{r}
+# Load the required packages using pacman
+library(pacman)
+
+# Function to load packages using pacman and record in Groundhog
+load_and_commit <- function(packages, version_description) {
+  # Load packages using pacman
+  p_load(packages)
+  
+  # Load Groundhog for version control
+  library(groundhog)
+  
+  # Commit the package loading action
+  gh_commit(version_description)
+}
+
+# Example usage
+load_and_commit(c("dplyr", "ggplot2"), "Loaded dplyr and ggplot2 packages")
+
+
+```
+
+However, the usage of `library()` in this response defeated my purpose of streamlining the loading of packages with `pacman` in the first place. Following this response, I prompt ChatGPT to use `pacman` while loading multiple packages as available on a chosed date, and it produced the following code.
+
+```{r}
+# Load packages available on a chosen date (e.g., "2021-09-01")
+p_load(dplyr, tidyr, date_check = "2021-09-01")
+```
+
+However, this was still invalid as the `date_check ="YYYY-MM-DD` wasn't feasible in `p_load()`. Upon further research on the functions of `Pacman` on its [help webpage](https://trinker.github.io/pacman_dev/), I found that this isn't a supported feature of this package. Therefore, I resolved to using solely `groundhog`. Surprisingly, creating a vector that includes all the packages I intended to install, then loading that vector works in a similar way to `p_load()`. In the end I forgo the use of `pacman` altogether and used `groudhog` as a compromise between streamlining and reproducibility as following:
+
+```{r}
+if (!require("groundhog")) {
+  install.packages("groundhog")
+}
+pkgs <- c("tidyverse", 
+  "kableExtra",
+  "flextable", 
+  "skimr",
+  "ggplot2",
+  "glue", 
+  "janitor")
+groundhog.library(pkgs, "2023-11-04")
+```
+
+In this case, ChatGPT did not provide any usable advice. Nevertheless, engaging with it enhanced my understanding about the limitations of the `pacman` package.
+
+### Scenerio 2
 
 ## Running Code
 

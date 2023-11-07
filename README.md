@@ -18,8 +18,8 @@ This R script does the following:
 
 To install it, simply
 
-1.  Download the dataset from the link, then drag it into the `DVHZ3-SOCS0100-Assignment` folder
-2.  run the `energy_and_fuel <- read_csv("Number of people with and without energy access (OWID based on World Bank, 2021).csv")` line in order to import the csv file into the dataset under the shorthand name `energy_and_fuel`
+1.  Download the dataset from the link, then drag it into the `~/DVHZ3-SOCS0100-Assignment` folder
+2.  run the `energy_and_fuel <- read_csv("Number of people with and without energy access (OWID based on World Bank, 2021).csv")` line by **removing the \# in front of it** in order to import the csv file into the dataset under the shorthand name `energy_and_fuel`
 
 ## Where users can get help with your project
 
