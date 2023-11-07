@@ -4,11 +4,11 @@
 >
 > R script which processes and visualise data from the [share of the population with access to electricity and clean fuels for cooking](https://github.com/owid/owid-datasets/blob/master/datasets/Number%20of%20people%20with%20and%20without%20energy%20access%20(OWID%20based%20on%20World%20Bank%2C%202021)/Number%20of%20people%20with%20and%20without%20energy%20access%20(OWID%20based%20on%20World%20Bank%2C%202021).csv) dataset (World Bank, 2021)
 
-[Specifically, this R script does the following:]{style="background:#fdbfff"}
+This R script does the following:
 
-[1. Performs three data-wrangling task to produce a refined dataset]{style="background:#fdbfff"}
+1. Performs three data-wrangling task to produce a refined dataset
 
-[2. Produces reproducible data visualisation based on the refined dataset]{style="background:#fdbfff"}
+2. Produces reproducible data visualisation based on the refined dataset
 
 ## How to use
 
