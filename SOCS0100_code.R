@@ -12,6 +12,7 @@ if (!require("groundhog")) {
   install.packages("groundhog")
 } 
 
+#creating the vector pkgs that include all the packages needed for the following task
 pkgs <- c("tidyverse", 
           "kableExtra",
           "flextable", 
