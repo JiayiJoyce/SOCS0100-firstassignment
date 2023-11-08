@@ -1,17 +1,26 @@
-install.packages("groundhog")
 
 
-library("groundhog")
+# Data
 
-pkgs <- c("tidyverse","skimr","dplyr")
+set.seed(1234) # for reproducibility
 
-groundhog.library(pkgs, "2023-11-06")
-energy_and_fuel %>% 
-  dplyr::filter(Entity== "China") 
-p_help(pacman)  
+df <- tibble(
+  "a" = sample(c(-99, 1:3), size = 5, replace = TRUE),
+  "b" = sample(c(-99, 1:3), size = 5, replace = TRUE),
+  "c" = sample(c(-99, 1:3), size = 5, replace = TRUE),
+  "d" = sample(c(-99, 1:3), size = 5, replace = TRUE)
+)
 
-if (!require("groundhog")) {
-  install.packages("groundhog")
+fix_missing <- function(x) {
+  x[x == -99] <- NA
+  x
 }
-pkgs <- c("tidyverse","skimr","dplyr")
-groundhog.library(pkgs, "2023-11-04")
+
+# Apply function to each column (vector)
+
+df$a <- fix_missing(df$a)
+df$b <- fix_missing(df$b)
+df$c <- fix_missing(df$c)
+df$d <- fix_missing(df$d)
+
+df

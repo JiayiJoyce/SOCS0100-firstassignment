@@ -99,10 +99,7 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 <section id="introduction-structure-variable-and-contextual-relevance-of-the-dataset" class="level3">
 <h3 class="anchored" data-anchor-id="introduction-structure-variable-and-contextual-relevance-of-the-dataset">Introduction (Structure, variable and contextual relevance of the dataset</h3>
 <p>I choose to analyse the <a href="https://github.com/owid/owid-datasets/blob/master/datasets/Number%20of%20people%20with%20and%20without%20energy%20access%20(OWID%20based%20on%20World%20Bank%2C%202021)/Number%20of%20people%20with%20and%20without%20energy%20access%20(OWID%20based%20on%20World%20Bank%2C%202021).csv">share of the population with access to electricity and clean fuels for cooking</a> dataset (World Bank, 2021).</p>
-<p>First, I ran the</p>
-</section>
-<section id="overview-of-the-dataset" class="level3">
-<h3 class="anchored" data-anchor-id="overview-of-the-dataset">Overview of the dataset</h3>
+<p>Among all the entities, I thought the classification based on income would be best to provide a holistic view of this data set. Analyzing the mean and standard deviation between different income stratas significantly reduced data complexity compared to analysing each individual country while at the same time retained a holistic view of the dataset.</p>
 </section>
 </section>
 <section id="part-i-b-data-processing-and-functional-programming" class="level2">
@@ -116,23 +113,202 @@ pre > code.sourceCode > span > a:first-child::before { text-decoration: underlin
 </section>
 <section id="part-ii-c-critical-engagement-with-ai-chatgpt" class="level2">
 <h2 class="anchored" data-anchor-id="part-ii-c-critical-engagement-with-ai-chatgpt">Part II-C Critical engagement with AI: ChatGPT</h2>
+<p>I collaborated with ChatGPT to check, edit and refine my code through out the project. These instances are listed below.</p>
+<section id="filtering-out-income-based-entities" class="level3">
+<h3 class="anchored" data-anchor-id="filtering-out-income-based-entities">Filtering out income-based entities</h3>
+<p>I encountered the first problem when attempting to inspect the means and standard deviation of my data. At first, I wrote a line based on the <em>sub-setting variables by names</em> task learned in class, only changing the scope of filter from columns to rows. My aim was to filter out entities like “high/middle/low income” where income is the sole classification.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a>percentage_energy_and_fuel <span class="sc">%&gt;%</span> </span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span> <span class="fu">filter</span>(entity <span class="fu">contains</span>(income))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-error">
+<pre><code>Error: &lt;text&gt;:2:25: unexpected symbol
+1: percentage_energy_and_fuel %&gt;% 
+2:   dplyr:: filter(entity contains
+                           ^</code></pre>
+</div>
+</div>
+<p>This produced an error, therefore I used it to ask for corrections from ChatGPT, which produced the following code:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb3"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>energy_and_fuel <span class="sc">%&gt;%</span></span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">str_detect</span>(Entity, <span class="st">"income"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-error">
+<pre><code>Error in energy_and_fuel %&gt;% filter(str_detect(Entity, "income")): could not find function "%&gt;%"</code></pre>
+</div>
+</div>
+<p>This line of code was grammatically correct, however while filtering for entities containing “income”, it also included entities such as <code>East Asia &amp; Pacific (excluding high income)</code> and <code>Europe &amp; Central Asia (excluding high income)</code>, which mentioned “income” but also included continents as classifications. To further refine this, I asked ChatGPT to also exclude entities like this through taking out entities that has “excluding” in them.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb5"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a>income_based_entity <span class="ot">&lt;-</span> energy_and_fuel <span class="sc">%&gt;%</span></span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">str_detect</span>(Entity, <span class="st">"high|low|middle"</span>) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">str_detect</span>(Entity, <span class="st">"excluding"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-error">
+<pre><code>Error in energy_and_fuel %&gt;% filter(str_detect(Entity, "high|low|middle") &amp; : could not find function "%&gt;%"</code></pre>
+</div>
+</div>
+<p>This did filtered out entities that had multiple classifications. However, it only retained entities such as <code>Low &amp; middle income</code> where one of the words among ‘high, low and middle’ had to be written in lower case. In order to retain entities such as <code>High income</code> where ‘High’ has an upper case letter, I asked ChatGPT to produce the same but case-insensitive filter.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="co"># excerpt of response: To include "high," "low," and "middle" in both upper and lower case when using str_detect in R, you can use the (?i) flag within the regular expression to make the pattern case-insensitive. </span></span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>income_based_entity <span class="ot">&lt;-</span> energy_and_fuel <span class="sc">%&gt;%</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">str_detect</span>(Entity, <span class="st">"(?i)high|low|middle"</span>) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">str_detect</span>(Entity, <span class="st">"exclude"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-error">
+<pre><code>Error in energy_and_fuel %&gt;% filter(str_detect(Entity, "(?i)high|low|middle") &amp; : could not find function "%&gt;%"</code></pre>
+</div>
+</div>
+<p>This code introduced the <code>(?i)</code> flag, which upon research is grammatically correct to use. Although by being case insensitive, it also included entities such as <code>Middle East &amp; North Africa</code> where ‘Middle’ was mentioned but not used to describe income. To further refine the filter, I manually added <code>str_detect(Entity, "income")</code> to the code, which produced a subset that only included the ideal entities for further inspection.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb9"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>income_based_entity <span class="ot">&lt;-</span> energy_and_fuel <span class="sc">%&gt;%</span></span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">filter</span>(<span class="fu">str_detect</span>(Entity, <span class="st">"(?i)high|low|middle"</span>) <span class="sc">&amp;</span> <span class="sc">!</span><span class="fu">str_detect</span>(Entity, <span class="st">"excluding"</span>)<span class="sc">&amp;</span> <span class="fu">str_detect</span>(Entity, <span class="st">"income"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-error">
+<pre><code>Error in energy_and_fuel %&gt;% filter(str_detect(Entity, "(?i)high|low|middle") &amp; : could not find function "%&gt;%"</code></pre>
+</div>
+</div>
+<p>In this case, engagement with ChatGPT helped me gain a better insight on using the <code>(?!)</code>. However, to get a satisfactory response I needed to include as many details as possible as it is difficult for ChatGPT to produce code tailored to the context of my r-script. Slight modification is often necessary.</p>
 </section>
-<section id="running-code" class="level2">
-<h2 class="anchored" data-anchor-id="running-code">Running Code</h2>
-<p>When you click the <strong>Render</strong> button a document will be generated that includes both content and the output of embedded code. You can embed code like this:</p>
+<section id="increasing-reproducibility-for-packages" class="level3">
+<h3 class="anchored" data-anchor-id="increasing-reproducibility-for-packages">Increasing reproducibility for packages</h3>
+<p>I used <code>pacman</code> to streamline the installation of multiple packages. However, to ensure reproducibility I want to load packages as available on the date I completed this project. I first prompted ChatGPT for ways to integrate <code>groundhog.library()</code> into <code>pacman</code>, for which it produced the following code:</p>
 <div class="cell">
-<div class="sourceCode cell-code" id="cb1"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="dv">1</span> <span class="sc">+</span> <span class="dv">1</span></span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
-<div class="cell-output cell-output-stdout">
-<pre><code>[1] 2</code></pre>
+<div class="sourceCode cell-code" id="cb11"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load the required packages using pacman</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(pacman)</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a><span class="co"># Function to load packages using pacman and record in Groundhog</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>load_and_commit <span class="ot">&lt;-</span> <span class="cf">function</span>(packages, version_description) {</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Load packages using pacman</span></span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">p_load</span>(packages)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Load Groundhog for version control</span></span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">library</span>(groundhog)</span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>  </span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>  <span class="co"># Commit the package loading action</span></span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">gh_commit</span>(version_description)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a><span class="co"># Example usage</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a><span class="fu">load_and_commit</span>(<span class="fu">c</span>(<span class="st">"dplyr"</span>, <span class="st">"ggplot2"</span>), <span class="st">"Loaded dplyr and ggplot2 packages"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Installing package into '/Users/chenjiayi/Library/R/x86_64/4.3/library'
+(as 'lib' is unspecified)</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package 'packages' is not available for this version of R
+
+A version of this package for your version of R might be available elsewhere,
+see the ideas at
+https://cran.r-project.org/doc/manuals/r-patched/R-admin.html#Installing-packages</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: 'BiocManager' not available.  Could not check Bioconductor.
+
+Please use `install.packages('BiocManager')` and then retry.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in p_install(package, character.only = TRUE, ...):</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in library(package, lib.loc = lib.loc, character.only = TRUE,
+logical.return = TRUE, : there is no package called 'packages'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in p_load(packages): Failed to install/load:
+packages</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Attached: 'Groundhog' (Version: 3.1.2)</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Tips and troubleshooting: https://groundhogR.com</code></pre>
+</div>
+<div class="cell-output cell-output-error">
+<pre><code>Error in gh_commit(version_description): could not find function "gh_commit"</code></pre>
 </div>
 </div>
-<p>You can add options to executable code like this</p>
+<p>However, the usage of <code>library()</code> in this response defeated my purpose of streamlining the loading of packages with <code>pacman</code> in the first place. Following this response, I prompt ChatGPT to use <code>pacman</code> while loading multiple packages as available on a chosed date, and it produced the following code.</p>
 <div class="cell">
+<div class="sourceCode cell-code" id="cb21"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb21-1"><a href="#cb21-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Load packages available on a chosen date (e.g., "2021-09-01")</span></span>
+<span id="cb21-2"><a href="#cb21-2" aria-hidden="true" tabindex="-1"></a><span class="fu">p_load</span>(dplyr, tidyr, <span class="at">date_check =</span> <span class="st">"2021-09-01"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Installing package into '/Users/chenjiayi/Library/R/x86_64/4.3/library'
+(as 'lib' is unspecified)</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: package '2021-09-01' is not available for this version of R
+
+A version of this package for your version of R might be available elsewhere,
+see the ideas at
+https://cran.r-project.org/doc/manuals/r-patched/R-admin.html#Installing-packages</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning: 'BiocManager' not available.  Could not check Bioconductor.
+
+Please use `install.packages('BiocManager')` and then retry.</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in p_install(package, character.only = TRUE, ...):</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in library(package, lib.loc = lib.loc, character.only = TRUE,
+logical.return = TRUE, : there is no package called '2021-09-01'</code></pre>
+</div>
+<div class="cell-output cell-output-stderr">
+<pre><code>Warning in p_load(dplyr, tidyr, date_check = "2021-09-01"): Failed to install/load:
+2021-09-01</code></pre>
+</div>
+</div>
+<p>However, this was still invalid as the <code>date_check ="YYYY-MM-DD</code> wasn’t feasible in <code>p_load()</code>. Upon further research on the functions of <code>Pacman</code> on its <a href="https://trinker.github.io/pacman_dev/">help webpage</a>, I found that this isn’t a supported feature of this package. Therefore, I resolved to using solely <code>groundhog</code>. Surprisingly, creating a vector that includes all the packages I intended to install, then loading that vector works in a similar way to <code>p_load()</code>. In the end I forgo the use of <code>pacman</code> altogether and used <code>groudhog</code> as a compromise between streamlining and reproducibility as following:</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb28"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb28-1"><a href="#cb28-1" aria-hidden="true" tabindex="-1"></a><span class="cf">if</span> (<span class="sc">!</span><span class="fu">require</span>(<span class="st">"groundhog"</span>)) {</span>
+<span id="cb28-2"><a href="#cb28-2" aria-hidden="true" tabindex="-1"></a>  <span class="fu">install.packages</span>(<span class="st">"groundhog"</span>)</span>
+<span id="cb28-3"><a href="#cb28-3" aria-hidden="true" tabindex="-1"></a>}</span>
+<span id="cb28-4"><a href="#cb28-4" aria-hidden="true" tabindex="-1"></a>pkgs <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"tidyverse"</span>, </span>
+<span id="cb28-5"><a href="#cb28-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">"kableExtra"</span>,</span>
+<span id="cb28-6"><a href="#cb28-6" aria-hidden="true" tabindex="-1"></a>  <span class="st">"flextable"</span>, </span>
+<span id="cb28-7"><a href="#cb28-7" aria-hidden="true" tabindex="-1"></a>  <span class="st">"skimr"</span>,</span>
+<span id="cb28-8"><a href="#cb28-8" aria-hidden="true" tabindex="-1"></a>  <span class="st">"ggplot2"</span>,</span>
+<span id="cb28-9"><a href="#cb28-9" aria-hidden="true" tabindex="-1"></a>  <span class="st">"glue"</span>, </span>
+<span id="cb28-10"><a href="#cb28-10" aria-hidden="true" tabindex="-1"></a>  <span class="st">"janitor"</span>)</span>
+<span id="cb28-11"><a href="#cb28-11" aria-hidden="true" tabindex="-1"></a><span class="fu">groundhog.library</span>(pkgs, <span class="st">"2023-11-04"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>In this case, ChatGPT did not provide any usable advice. Nevertheless, engaging with it enhanced my understanding about the limitations of the <code>pacman</code> package.</p>
+</section>
+<section id="filtering-out-individual-countries" class="level3">
+<h3 class="anchored" data-anchor-id="filtering-out-individual-countries">Filtering out individual countries</h3>
+<p>This is where ChatGPT offered the most insightful perspective by introducing the usage of the <code>countrycode</code> package when I first asked it how to separate individual countries from a list of entities. However, its purposed solution of extracting country names did not fit my purpose not only due its grammatical error, but also due to its failure to extract neither the full names nor a full list.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb29"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb29-1"><a href="#cb29-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">"countrycode"</span>)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
 <div class="cell-output cell-output-stdout">
-<pre><code>[1] 4</code></pre>
+<pre><code>
+The downloaded binary packages are in
+    /var/folders/q_/nhd1dy411215pd4t0nbqb6b80000gn/T//RtmptMn4pP/downloaded_packages</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb31"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb31-1"><a href="#cb31-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(countrycode)</span>
+<span id="cb31-2"><a href="#cb31-2" aria-hidden="true" tabindex="-1"></a>country_list <span class="ot">&lt;-</span> countrynames<span class="sc">::</span><span class="fu">countrynames</span>()</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-error">
+<pre><code>Error in loadNamespace(x): there is no package called 'countrynames'</code></pre>
+</div>
+<div class="sourceCode cell-code" id="cb33"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb33-1"><a href="#cb33-1" aria-hidden="true" tabindex="-1"></a><span class="co">#Use the countrycode function to fetch the country names based on ISO2 country codes. Here's an example to obtain a list of country names for all ISO2 country codes:</span></span>
+<span id="cb33-2"><a href="#cb33-2" aria-hidden="true" tabindex="-1"></a>iso2_codes <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"US"</span>, <span class="st">"CA"</span>, <span class="st">"GB"</span>, <span class="st">"DE"</span>, <span class="st">"FR"</span>, <span class="st">"JP"</span>)</span>
+<span id="cb33-3"><a href="#cb33-3" aria-hidden="true" tabindex="-1"></a><span class="co">#If you want to fetch country names based on ISO3 country codes, you can use the following code:</span></span>
+<span id="cb33-4"><a href="#cb33-4" aria-hidden="true" tabindex="-1"></a>iso3c <span class="ot">&lt;-</span> <span class="fu">unique</span>(<span class="fu">countrycode</span>(<span class="dv">1</span><span class="sc">:</span><span class="dv">300</span>, <span class="at">origin =</span> <span class="st">"iso3c"</span>, <span class="at">destination =</span> <span class="st">"country.name"</span>))</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+</div>
+<p>Upon further researsh on this package, the replies for <a href="https://stackoverflow.com/questions/70787674/is-it-possible-to-get-r-to-identify-countries-in-a-dataframe">this question on Stackoverflow</a> introduced the usage of <code>countrycode::codelist</code> to quickly view all the list that this package has to offer. I then used <code>$</code> to extract the<code>country.name.en</code> where the English names for all the country are listed.</p>
+<p>Then, I consulted ChatGPT on how to turn the single column into a list. It replied with the following</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb34"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb34-1"><a href="#cb34-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Assuming you have a data frame named my_data</span></span>
+<span id="cb34-2"><a href="#cb34-2" aria-hidden="true" tabindex="-1"></a>my_list <span class="ot">&lt;-</span> <span class="fu">as.list</span>(my_data<span class="sc">$</span>my_column)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-error">
+<pre><code>Error in eval(expr, envir, enclos): object 'my_data' not found</code></pre>
 </div>
 </div>
-<p>The <code>echo: false</code> option disables the printing of code (only output is displayed).</p>
+<p>which I integrated into my finalized code.</p>
+<div class="cell">
+<div class="sourceCode cell-code" id="cb36"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb36-1"><a href="#cb36-1" aria-hidden="true" tabindex="-1"></a>country_names <span class="ot">&lt;-</span> countrycode<span class="sc">::</span>codelist<span class="sc">$</span>country.name.en</span>
+<span id="cb36-2"><a href="#cb36-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb36-3"><a href="#cb36-3" aria-hidden="true" tabindex="-1"></a>country_percentage_energy_and_fuel<span class="ot">&lt;-</span> percentage_energy_and_fuel<span class="sc">%&gt;%</span></span>
+<span id="cb36-4"><a href="#cb36-4" aria-hidden="true" tabindex="-1"></a>  dplyr<span class="sc">::</span><span class="fu">filter</span>(entity <span class="sc">%in%</span> country_names)</span></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre></div>
+<div class="cell-output cell-output-error">
+<pre><code>Error in eval(expr, envir, enclos): object 'percentage_energy_and_fuel' not found</code></pre>
+</div>
+</div>
+<p>Overall, ChatGPT was similarily prone to produce answers that are irrelevant to the context or grammatically incorrect as before. However, its ability to introduce new resources into the coding process was immensely helpful, if followed by more in-depth researches upon these resources.</p>
+</section>
 </section>
 
 </main>

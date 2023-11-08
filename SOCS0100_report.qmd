@@ -1,7 +1,11 @@
 ---
 title: "SOCS0100_report"
-format: html
 editor: visual
+format: 
+  html: 
+    theme: litera
+error: true
+warning: false
 ---
 
 ## Part I-A Data Exploration and Contextualisation
@@ -10,7 +14,7 @@ editor: visual
 
 I choose to analyse the [share of the population with access to electricity and clean fuels for cooking](https://github.com/owid/owid-datasets/blob/master/datasets/Number%20of%20people%20with%20and%20without%20energy%20access%20(OWID%20based%20on%20World%20Bank%2C%202021)/Number%20of%20people%20with%20and%20without%20energy%20access%20(OWID%20based%20on%20World%20Bank%2C%202021).csv) dataset (World Bank, 2021).
 
-### Overview of the dataset
+Among all the entities, I thought the classification based on income would be best to provide a holistic view of this data set. Analyzing the mean and standard deviation between different income stratas significantly reduced data complexity compared to analysing each individual country while at the same time retained a holistic view of the dataset.
 
 ## Part I-B Data Processing and Functional Programming
 
@@ -22,11 +26,58 @@ I choose to analyse the [share of the population with access to electricity and 
 
 I collaborated with ChatGPT to check, edit and refine my code through out the project. These instances are listed below.
 
+### Filtering out income-based entities
+
+I encountered the first problem when attempting to inspect the means and standard deviation of my data. At first, I wrote a line based on the *sub-setting variables by names* task learned in class, only changing the scope of filter from columns to rows. My aim was to filter out entities like "high/middle/low income" where income is the sole classification.
+
+```{r}
+percentage_energy_and_fuel %>% 
+  dplyr:: filter(entity contains(income))
+```
+
+This produced an error, therefore I used it to ask for corrections from ChatGPT, which produced the following code:
+
+```{r}
+#| label: 1st ChatGPT response for filtering
+energy_and_fuel %>%
+  filter(str_detect(Entity, "income"))
+```
+
+This line of code was grammatically correct, however while filtering for entities containing "income", it also included entities such as `East Asia & Pacific (excluding high income)` and `Europe & Central Asia (excluding high income)`, which mentioned "income" but also included continents as classifications. To further refine this, I asked ChatGPT to also exclude entities like this through taking out entities that has "excluding" in them.
+
+```{r}
+#| label: 2nd ChatGPT response for filtering, excluding characters
+income_based_entity <- energy_and_fuel %>%
+  filter(str_detect(Entity, "high|low|middle") & !str_detect(Entity, "excluding"))
+```
+
+This did filtered out entities that had multiple classifications. However, it only retained entities such as `Low & middle income` where one of the words among 'high, low and middle' had to be written in lower case. In order to retain entities such as `High income` where 'High' has an upper case letter, I asked ChatGPT to produce the same but case-insensitive filter.
+
+```{r}
+#| label: 3rd ChatGPT response for filtering, make filter case insensitive
+# excerpt of response: To include "high," "low," and "middle" in both upper and lower case when using str_detect in R, you can use the (?i) flag within the regular expression to make the pattern case-insensitive. 
+income_based_entity <- energy_and_fuel %>%
+  filter(str_detect(Entity, "(?i)high|low|middle") & !str_detect(Entity, "exclude"))
+```
+
+This code introduced the `(?i)` flag, which upon research is grammatically correct to use. Although by being case insensitive, it also included entities such as `Middle East & North Africa` where 'Middle' was mentioned but not used to describe income. To further refine the filter, I manually added `str_detect(Entity, "income")` to the code, which produced a subset that only included the ideal entities for further inspection.
+
+```{r}
+#| label: finalized filtering code.
+income_based_entity <- energy_and_fuel %>%
+  filter(str_detect(Entity, "(?i)high|low|middle") & !str_detect(Entity, "excluding")& str_detect(Entity, "income"))
+```
+
+In this case, engagement with ChatGPT helped me gain a better insight on using the `(?!)`. However, to get a satisfactory response I needed to include as many details as possible as it is difficult for ChatGPT to produce code tailored to the context of my r-script. Slight modification is often necessary.
+
 ### Increasing reproducibility for packages
 
 I used `pacman` to streamline the installation of multiple packages. However, to ensure reproducibility I want to load packages as available on the date I completed this project. I first prompted ChatGPT for ways to integrate `groundhog.library()` into `pacman`, for which it produced the following code:
 
 ```{r}
+#| label: 1st ChatGPT output for reproducibility
+#| warning: true
+#| error: true
 # Load the required packages using pacman
 library(pacman)
 
@@ -51,6 +102,8 @@ load_and_commit(c("dplyr", "ggplot2"), "Loaded dplyr and ggplot2 packages")
 However, the usage of `library()` in this response defeated my purpose of streamlining the loading of packages with `pacman` in the first place. Following this response, I prompt ChatGPT to use `pacman` while loading multiple packages as available on a chosed date, and it produced the following code.
 
 ```{r}
+#| label: 2nd ChatGpt output for reproducibility
+#| warning: true
 # Load packages available on a chosen date (e.g., "2021-09-01")
 p_load(dplyr, tidyr, date_check = "2021-09-01")
 ```
@@ -58,6 +111,8 @@ p_load(dplyr, tidyr, date_check = "2021-09-01")
 However, this was still invalid as the `date_check ="YYYY-MM-DD` wasn't feasible in `p_load()`. Upon further research on the functions of `Pacman` on its [help webpage](https://trinker.github.io/pacman_dev/), I found that this isn't a supported feature of this package. Therefore, I resolved to using solely `groundhog`. Surprisingly, creating a vector that includes all the packages I intended to install, then loading that vector works in a similar way to `p_load()`. In the end I forgo the use of `pacman` altogether and used `groudhog` as a compromise between streamlining and reproducibility as following:
 
 ```{r}
+#| label: my solution for reproducibility
+#| warning: false
 if (!require("groundhog")) {
   install.packages("groundhog")
 }
@@ -73,21 +128,41 @@ groundhog.library(pkgs, "2023-11-04")
 
 In this case, ChatGPT did not provide any usable advice. Nevertheless, engaging with it enhanced my understanding about the limitations of the `pacman` package.
 
-### Scenerio 2
+### Filtering out individual countries
 
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
+This is where ChatGPT offered the most insightful perspective by introducing the usage of the `countrycode` package when I first asked it how to separate individual countries from a list of entities. However, its purposed solution of extracting country names did not fit my purpose not only due its grammatical error, but also due to its failure to extract neither the full names nor a full list.
 
 ```{r}
-1 + 1
+#| label: 1st ChatGPT response, introduced countrycode
+install.packages("countrycode")
+library(countrycode)
+country_list <- countrynames::countrynames()
+#Use the countrycode function to fetch the country names based on ISO2 country codes. Here's an example to obtain a list of country names for all ISO2 country codes:
+iso2_codes <- c("US", "CA", "GB", "DE", "FR", "JP")
+#If you want to fetch country names based on ISO3 country codes, you can use the following code:
+iso3c <- unique(countrycode(1:300, origin = "iso3c", destination = "country.name"))
+
 ```
 
-You can add options to executable code like this
+Upon further researsh on this package, the replies for [this question on Stackoverflow](https://stackoverflow.com/questions/70787674/is-it-possible-to-get-r-to-identify-countries-in-a-dataframe) introduced the usage of `countrycode::codelist` to quickly view all the list that this package has to offer. I then used `$` to extract the`country.name.en` where the English names for all the country are listed.
+
+Then, I consulted ChatGPT on how to turn the single column into a list. It replied with the following
 
 ```{r}
-#| echo: false
-2 * 2
+# Assuming you have a data frame named my_data
+my_list <- as.list(my_data$my_column)
+
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+which I integrated into my finalized code.
+
+```{r}
+#| label: my own solution for extracting english country names and setting them apart from other
+country_names <- countrycode::codelist$country.name.en
+
+country_percentage_energy_and_fuel<- percentage_energy_and_fuel%>%
+  dplyr::filter(entity %in% country_names)
+
+```
+
+Overall, ChatGPT was similarily prone to produce answers that are irrelevant to the context or grammatically incorrect as before. However, its ability to introduce new resources into the coding process was immensely helpful, if followed by more in-depth researches upon these resources.
