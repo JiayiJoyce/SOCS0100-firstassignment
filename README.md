@@ -8,7 +8,7 @@
 
 This R script does the following:
 
-1.  Performs three data-wrangling task to produce a refined dataset
+1.  Performs three data-wrangling task to produce two refined datasets: income_based_entity and country_percentate_energy_and_fuel
 
 2.  Produces reproducible data visualisation based on the refined dataset
 
@@ -21,8 +21,10 @@ To install it, simply
 1.  Download the dataset from the link, then drag it into the `~/DVHZ3-SOCS0100-Assignment` folder
 2.  run the `energy_and_fuel <- read_csv("Number of people with and without energy access (OWID based on World Bank, 2021).csv")` line by **removing the \# in front of it** in order to import the csv file into the dataset under the shorthand name `energy_and_fuel`
 
-## Where users can get help with your project
+## Acknowledgement and Contribution
 
-## Who maintains and contributes to the project
+While developing this project, I critically engaged with [ChatGPT](https://chat.openai.com/) during the process of code refining and editing.
 
-I, an anonymous student, composed this r-script with knowledge learned in SOCS0100. I critically engaged with ChatGPT during the process of code refining and editing.
+The course material from SOCS0100 was very helpful, including the book [R for Data Science](https://r4ds.hadley.nz/)
+
+I also consulted sources from [Stackoverflow](https://stackoverflow.com/) to solve technical problms.
