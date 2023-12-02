@@ -1,0 +1,119 @@
+---
+title: "Reflections on making pickles"
+format: html
+editor: visual
+---
+
+## The use of \~map
+
+### Set up
+
+```{r}
+#| echo: false
+#| output: false
+pacman::p_load(tidyverse, 
+               xml2, 
+               rvest, 
+               robotstxt,
+               shiny,
+               janitor,
+               scico,
+               shinythemes,
+               purrr) 
+
+# 1. listing url
+yahoo_finance_url_list<- c("https://finance.yahoo.com/world-indices/",
+                           "https://finance.yahoo.com/commodities/",
+                           "https://finance.yahoo.com/trending-tickers/")
+
+
+# 2.Writing Function
+get_market_data <- function(url){
+  tables<- read_html(url)%>%
+    html_nodes(xpath='//*[@id="list-res-table"]/div[1]/table')%>%
+    html_table()
+  return(tables)
+}
+
+# 3. Automate with purrr
+result_list <- map(yahoo_finance_url_list, get_market_data)
+result_list
+
+```
+
+so far, everything is perfect, with the result list containing three tables full of scraped data and such.
+
+### This is my initial code
+
+Note how in the final Line there is no nested map functions
+
+```{r}
+#| error: true
+#| echo: true
+#| output: false
+#| code-overflow: wrap
+
+# 4. Write a function to clean names something 
+get_NLC <- function(i){
+  NLC<-result_list[[i]]%>% 
+    select(Name,`Last Price`,`% Change`)
+  names(NLC) <- janitor::make_clean_names(names(NLC))
+  return(NLC)
+}
+
+cleaned_table <- map(result_list,get_NLC)
+cleaned_table
+```
+
+### This is the code edited by Chat GPT
+
+> notice the nested map function at the end of this block
+
+```{r}
+#| echo: true
+#| output: true
+
+
+# 4. Write a function to clean names
+get_NLC <- function(table){
+  NLC <- table %>% 
+    select(Name, `Last Price`, `% Change`)
+  # name, last price change
+  names(NLC) <- janitor::make_clean_names(names(NLC))
+  return(NLC)
+}
+
+# Apply get_NLC to each table in each list
+cleaned_table <- map(result_list, ~map(., get_NLC))
+cleaned_table
+```
+
+#### Explaination from Chat GPT
+
+Certainly! The line `cleaned_table <- map(result_list, ~map(., get_NLC))` is using the `map` function from the `purrr` package to apply the `get_NLC` function to each element within the nested lists in `result_list`. Here's a breakdown of this line:
+
+1.  `map(result_list, ~map(., get_NLC))`: This is a nested use of the `map` function.
+
+    -   The outer `map` is applied to `result_list`, which is a list of lists. Each element in `result_list` represents the tables obtained from a specific URL.
+
+    -   The inner `map` is used within the formula (`~`) to iterate over the tables within each list. This is the key difference from your initial approach.
+
+    -   `.` represents each element within the outer list (`result_list`). So, `map(., get_NLC)` applies the `get_NLC` function to each table within each list.
+
+2.  The result is a nested list structure where each element corresponds to the cleaned tables obtained from a specific URL.
+
+Now, let me compare it with your initial approach:
+
+``` r
+cleaned_table <- map(result_list, get_NLC)
+```
+
+In your initial approach, `map(result_list, get_NLC)` applies the `get_NLC` function directly to each list in `result_list`. This means that `get_NLC` is expected to handle a list, but it's designed to work with individual data frames.
+
+In the corrected approach:
+
+``` r
+cleaned_table <- map(result_list, ~map(., get_NLC))
+```
+
+The nested `map(., get_NLC)` is explicitly applied to each table within each list, allowing `get_NLC` to work with data frames directly. It's a way of handling the fact that `result_list` is a list of lists, and you need to apply a function to each data frame within each sublist.
