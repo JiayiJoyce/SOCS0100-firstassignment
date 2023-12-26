@@ -1,0 +1,366 @@
+---
+title: "SOCS0100_report"
+editor: visual
+format: html
+---
+
+
+## Part I-A Data Exploration and Contextualisation
+
+
+```{r}
+#| label: set up code
+#| include: false
+#setwd(past your working directory path name here)
+rm(list = ls())
+#check whether groundhog is installed on the computer, install if not. Remove # to install
+if (!require("groundhog")) {
+  install.packages("groundhog")
+}
+
+#creating the vector pkgs that include all the packages needed for the following task
+pkgs <- c("tidyverse", 
+          "kableExtra",
+          "flextable", 
+          "skimr",
+          "ggplot2",
+          "glue", 
+          "janitor", 
+          "countrycode")
+
+# install packages as they are available on 2023-11-04, remove # to install
+groundhog.library(pkgs, "2023-11-04")
+```
+
+
+### Introduction (Structure, variable and contextual relevance of the dataset
+
+I choose to analyse the [share of the population with access to electricity and clean fuels for cooking](https://github.com/owid/owid-datasets/blob/master/datasets/Number%20of%20people%20with%20and%20without%20energy%20access%20(OWID%20based%20on%20World%20Bank%2C%202021)/Number%20of%20people%20with%20and%20without%20energy%20access%20(OWID%20based%20on%20World%20Bank%2C%202021).csv) dataset (World Bank, 2021). Using `summary()` , we can see it has six variables as listed below. Aside from `Entity` which is a character vector, the rest are double vectors.
+
+
+```{r}
+#| label: importing and inspecting the data
+#| echo: true
+#| output: true
+#| message: true
+
+#importing data
+energy_and_fuel <- read_csv("Number of people with and without energy access (OWID based on World Bank, 2021).csv")
+#inspecting data
+options(scipen=999)
+summary(energy_and_fuel)
+
+```
+
+
+Most of the missing values are concentrated in `number_with_clean_fuels_cooking` and `number_without_clean_fuels_cooking` column, each of them have 2661 NAs. The mean and standard deviations are also listed in the output for the `summary()` function, although they are too generic to contribute to descriptive findings.
+
+Among all the entities, I thought the classification based on income would be best to provide a holistic view of this data set. Analysing the mean and standard deviation between different income strata significantly reduced data complexity compared to analysing each individual country while at the same time retained a holistic view of the dataset. The output for this analysis is included below. Overall, it showcased on average over the span of the data set, population in high income countries are almost guaranteed with accesses to electricity (mean%=1 and 0.99) while population in low income countries had the least access compared to countries in other income strata.
+
+This dataset, from a sociological perspective, can provide insight into the relationship between time, income and infrastructural development, therefore it is extremely worth researching.
+
+## Part I-B Data Processing and Functional Programming
+
+I began this section by using the `janitor` package to create machine readable headings, due to the inconsistency in upper and lower case as well as the use of spacing in the original database.
+
+
+```{r}
+#| label: make column names machine readable
+cleaned_energy_and_fuel<-janitor::clean_names(energy_and_fuel) 
+
+```
+
+
+Then, I calculate three new variables based on the existing ones: `total_population`, `percentage_with_electricity_access` and `percentage_with_clean_fuel_access`. Due to the significant difference in the population base between different entities, percentages will have more comparability than absolute numbers.
+
+
+```{r}
+ #| label: creating three new columns: total_population, percentage_with_electricity_access and percentage_with_clean_fuel_access
+percentage_energy_and_fuel <- cleaned_energy_and_fuel %>% 
+  mutate(total_population = number_of_people_with_access_to_electricity +number_of_people_without_access_to_electricity) %>%
+  mutate(percentage_with_electricity_access= number_of_people_with_access_to_electricity / total_population) %>%
+  mutate(percentage_with_clean_fuel_access= number_with_clean_fuels_cooking/total_population)
+
+```
+
+
+Separating individual countries is an important step, as under the `Entity` variable there were also data on continents and income strata with much greater population than individual countries. They had to be removed as leaving them in the data frame could potentially skew the following visualisation.
+
+I then used a function to replaced all the 0 to NA in the new `country_percentage_energy_and_fuel` dataset, as 0 could cause sharp plunges in the visualization and disturb its presentation as well.
+
+
+```{r}
+#| label: filtering, subsetting, renaming and automation while wrangling individual countries in the dataset
+#getting a list of all individual country names
+country_names <- countrycode::codelist$country.name.en
+#filtering out individual countries from the percentage_energy_and_fuel dataset
+country_percentage_energy_and_fuel<- percentage_energy_and_fuel%>%
+  dplyr::filter(entity %in% country_names)
+#renaming entity to country, since there are only individual countries in there now
+country_percentage_energy_and_fuel<-country_percentage_energy_and_fuel%>% rename(country=entity)
+
+#function to replace 0 with NA to avoid sharp plunge in data during visualisation
+replace_0_with_NA <- function (x) {
+  x[x == 0] <- NA
+  x
+}
+#applying this function to all columns in country_percentage_energy_and_fuel
+country_percentage_energy_and_fuel <- purrr::map_df(country_percentage_energy_and_fuel,replace_0_with_NA)
+```
+
+
+Building on this tidied dataset, I subsetted the five most populous counties in 2019 into`top five population` in order to ensure my visualization of this subset covers the trend experienced by the maximum amount of population living presently.
+
+
+```{r}
+#| label: finding out the five most populous countries in 2019
+#| echo: true
+#| output-location: fragment
+country_percentage_energy_and_fuel%>%
+  dplyr::filter(year==2019) %>%
+  arrange(desc(total_population)) %>%
+  slice(1:5)
+country_percentage_energy_and_fuel [1:5, ]
+#subsetting them into top_five_population
+top_five_population <- country_percentage_energy_and_fuel %>%
+  dplyr::filter(country %in% c("China","India","United States","Indonesia","Pakistan"))
+
+```
+
+
+I created a subset to document `income_based_entites` as well, in order to add a further dimension for my following visualisation and study of this dataset.
+
+
+```{r}
+#| label: filtering out income-based entity and subsetting them into income_based_entity dataframe
+income_based_entity <- percentage_energy_and_fuel %>%
+  filter(str_detect(entity, "(?i)high|low|middle") & !str_detect(entity, "excluding")& str_detect(entity, "income"))
+```
+
+
+## Part II-A Data Visualisation and Functional Programming
+
+In this first visualisation task I choose to use a point graph accompanied by lines indicating their tendency. This Graph illustrated the different speed the coverage of electricity access proceeds in the five most populous countries in 2019.
+
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+
+options(scipen=999)
+ggplot(top_five_population, aes(x = year, y = percentage_with_electricity_access , linetype = country)) + geom_point() +
+  geom_smooth(method = "lm", se = TRUE, color = "purple") 
+geom_smooth()
+
+```
+
+
+These seven graphs illustrated how trends such as "total number of population with access to electricity" and "total number of population with access to clean fuel" increased on a transnational trend evident through the unanimous increase in graphs representing accessibility and the unanimous decrease in graphs representing population lacking in accessibility.
+
+Function is needed in this situation as I need to produce multiple graphs all aiming to display trend in a similar way. In this visualisation, I used point graph as well, while adding a trend line to showcase the transnational increase in the accessibility of both the clean fuel and electricity.
+
+
+```{r}
+#| warning: false
+#| message: false
+#| output-location: fragment
+
+ #switch off scientific notion to ensure readability
+options(scipen=999) 
+create_point_plot <- function(i) {
+  income_based_entity %>%
+    ggplot(aes_string(x = names(income_based_entity)[2], y = names(income_based_entity)[i]), linetype = entity) +
+    geom_point() +
+    geom_smooth(method = "lm", se = TRUE, color = "purple") +  
+    labs(
+      title = glue("The Trend of {names(income_based_entity)[i]}"),
+      y = glue("{names(income_based_entity)[i]}")
+    )
+}
+# applying function into 
+plots_list <- map(3:ncol(income_based_entity), create_point_plot)
+plots_list
+
+
+```
+
+
+## Part II-C Critical engagement with AI: ChatGPT
+
+### Filtering out income-based entities
+
+I encountered the first problem when inspect the means and standard deviation of my data. At first, I wrote a line based on the *sub-setting variables by names* task learned in class, only changing the scope of filter from columns to rows. My aim was to filter out entities like "high/middle/low income" where income is the sole classification.
+
+
+```{r eval=FALSE}
+
+percentage_energy_and_fuel %>% 
+  dplyr:: filter(entity contains(income))
+
+
+```
+
+
+This produced an error, therefore I used it to ask for corrections from ChatGPT, which produced the following code:
+
+
+```{r}
+#| label: 1st ChatGPT response for filtering
+#| eval: false
+energy_and_fuel %>%
+  filter(str_detect(Entity, "income"))
+```
+
+
+This line of code was grammatically correct, however while filtering for entities containing "income", it also included entities such as `East Asia & Pacific (excluding high income)` and `Europe & Central Asia (excluding high income)`, which mentioned "income" but also included continents as classifications. To further refine this, I asked ChatGPT to also exclude entities like this through taking out entities that has "excluding" in them.
+
+
+```{r}
+#| label: 2nd ChatGPT response for filtering, excluding characters
+#| eval: false
+income_based_entity <- energy_and_fuel %>%
+  filter(str_detect(Entity, "high|low|middle") & !str_detect(Entity, "excluding"))
+```
+
+
+This did filtered out entities that had multiple classifications. However, it only retained entities such as `Low & middle income` where one of the words among 'high, low and middle' had to be written in lower case. In order to retain entities such as `High income` where 'High' has an upper case letter, I asked ChatGPT to produce the same but case-insensitive filter.
+
+
+```{r}
+#| label: 3rd ChatGPT response for filtering, make filter case insensitive
+# excerpt of response: To include "high," "low," and "middle" in both upper and lower case when using str_detect in R, you can use the (?i) flag within the regular expression to make the pattern case-insensitive. 
+
+income_based_entity <- energy_and_fuel %>%
+  filter(str_detect(Entity, "(?i)high|low|middle") & !str_detect(Entity, "exclude"))
+```
+
+
+This code introduced the `(?i)` flag, which upon research is grammatically correct to use. Although by being case insensitive, it also included entities such as `Middle East & North Africa` where 'Middle' was mentioned but not used to describe income. To further refine the filter, I manually added `str_detect(Entity, "income")` to the code, which produced a subset that only included the ideal entities for further inspection.
+
+
+```{r}
+#| label: finalized filtering code.
+income_based_entity <- energy_and_fuel %>%
+  filter(str_detect(Entity, "(?i)high|low|middle") & !str_detect(Entity, "excluding")& str_detect(Entity, "income"))
+```
+
+
+In this case, engagement with ChatGPT helped me gain a better insight on using the `(?!)`. However, to get a satisfactory response I needed to include as many details as possible as it is difficult for ChatGPT to produce code tailored to the context of my r-script. Slight modification is often necessary.
+
+### Increasing reproducibility for packages
+
+I used `pacman` to streamline the installation of multiple packages. However, to ensure reproducibility I want to load packages as available on the date I completed this project. I first prompted ChatGPT for ways to integrate `groundhog.library()` into `pacman`, for which it produced the following code:
+
+
+```{r}
+#| label: 1st ChatGPT output for reproducibility
+#| warning: true
+#| error: true
+# Load the required packages using pacman
+library(pacman)
+
+# Function to load packages using pacman and record in Groundhog
+load_and_commit <- function(packages, version_description) {
+  # Load packages using pacman
+  p_load(packages)
+  
+  # Load Groundhog for version control
+  library(groundhog)
+  
+  # Commit the package loading action
+  gh_commit(version_description)
+}
+
+# Example usage
+load_and_commit(c("dplyr", "ggplot2"), "Loaded dplyr and ggplot2 packages")
+
+
+```
+
+
+However, the usage of `library()` in this response defeated my purpose of streamlining the loading of packages with `pacman` in the first place. Following this response, I prompt ChatGPT to use `pacman` while loading multiple packages as available on a chosed date, and it produced the following code.
+
+
+```{r}
+#| label: 2nd ChatGpt output for reproducibility
+#| warning: true
+# Load packages available on a chosen date (e.g., "2021-09-01")
+p_load(dplyr, tidyr, date_check = "2021-09-01")
+```
+
+
+However, this was still invalid as the `date_check ="YYYY-MM-DD` wasn't feasible in `p_load()`. Upon further research on the functions of `Pacman` on its [help webpage](https://trinker.github.io/pacman_dev/), I found that this isn't a supported feature of this package. Therefore, I resolved to using solely `groundhog`. Surprisingly, creating a vector that includes all the packages I intended to install, then loading that vector works in a similar way to `p_load()`. In the end I forgo the use of `pacman` altogether and used `groudhog` as a compromise between streamlining and reproducibility as following:
+
+
+```{r}
+#| label: my solution for reproducibility
+#| warning: false
+if (!require("groundhog")) {
+  install.packages("groundhog")
+}
+pkgs <- c("tidyverse", 
+  "kableExtra",
+  "flextable", 
+  "skimr",
+  "ggplot2",
+  "glue", 
+  "janitor")
+groundhog.library(pkgs, "2023-11-04")
+
+
+
+```
+
+
+In this case, ChatGPT did not provide any usable advice. Nevertheless, engaging with it enhanced my understanding about the limitations of the pacman package.
+
+### Filtering out individual countries
+
+This is where ChatGPT offered the most insightful perspective by introducing the usage of the `countrycode` package when I first asked it how to separate individual countries from a list of entities. However, its purposed solution of extracting country names did not fit my purpose not only due its grammatical error, but also due to its failure to extract neither the full names nor a full list.
+
+
+```{r}
+#| label: 1st ChatGPT response, introduced countrycode
+#| eval: false
+install.packages("countrycode")
+library(countrycode)
+country_list <- countrynames::countrynames()
+#Use the countrycode function to fetch the country names based on ISO2 country codes. Here's an example to obtain a list of country names for all ISO2 country codes:
+iso2_codes <- c("US", "CA", "GB", "DE", "FR", "JP")
+#If you want to fetch country names based on ISO3 country codes, you can use the following code:
+iso3c <- unique(countrycode(1:300, origin = "iso3c", destination = "country.name"))
+
+```
+
+
+Upon further researsh on this package, the replies for [this question on Stackoverflow](https://stackoverflow.com/questions/70787674/is-it-possible-to-get-r-to-identify-countries-in-a-dataframe) introduced the usage of `countrycode::codelist` to quickly view all the list that this package has to offer. I then used `$` to extract the`country.name.en` where the English names for all the country are listed.
+
+
+```{r eval=FALSE}
+#| eval: false
+#| error: true
+
+
+list <- as.list(data$column)
+
+
+```
+
+
+Then, I consulted ChatGPT on how to turn the single column into a list. It replied with the following:
+
+
+```{r}
+
+#| label: my own solution for extracting english country names and setting them apart from other
+
+#which I integrated into my finalized code.
+country_names <- countrycode::codelist$country.name.en
+
+country_percentage_energy_and_fuel<- percentage_energy_and_fuel%>%
+  dplyr::filter(entity %in% country_names)
+
+```
+
+
+Overall, ChatGPT was similarily prone to produce answers that are irrelevant to the context or grammatically incorrect as before. However, its ability to introduce new resources into the coding process was immensely helpful, if followed by more in-depth researches upon these resources.
+
