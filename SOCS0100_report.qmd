@@ -1,14 +1,26 @@
 ---
 title: "SOCS0100_report"
 editor: visual
-format: html
+format:
+  html:
+    theme: litera 
+code-fold: true
+code-overflow: wrap
+warning: false
 ---
 
 ## Part I-A Data Exploration and Contextualisation
 
 ```{r}
+#note20231231:这里把include去掉就会有settings的源代码
 #| label: set up code
-#| include: false
+
+
+#| warning: false
+#| message: false
+#| output: true
+
+
 #setwd(past your working directory path name here)
 rm(list = ls())
 #check whether groundhog is installed on the computer, install if not. Remove # to install
@@ -38,7 +50,8 @@ I choose to analyse the [share of the population with access to electricity and 
 #| label: importing and inspecting the data
 #| echo: true
 #| output: true
-#| message: true
+#| message: false
+#| warning: false
 
 #importing data
 energy_and_fuel <- read_csv("Number of people with and without energy access (OWID based on World Bank, 2021).csv")
